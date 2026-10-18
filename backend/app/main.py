@@ -81,7 +81,7 @@ def twin(patient_id:str,db:Session=Depends(get_db)):
 @app.get('/api/patients/{patient_id}/comparisons')
 def compare(patient_id:str,from_id:str=Query(...),to_id:str=Query(...),db:Session=Depends(get_db)):
  if from_id==to_id:raise HTTPException(400,'Choose two different observations')
- rows=[db.scalar(oq().where(Observation.id=oid,Observation.patient_id==patient_id)) for oid in (from_id,to_id)]
+ rows=[db.scalar(oq().where(Observation.id==oid,Observation.patient_id==patient_id)) for oid in (from_id,to_id)]
  if any(r is None for r in rows):raise HTTPException(404,'Observation not found for this patient')
  a,b=rows;ta,tb=aware_utc(a.observed_at),aware_utc(b.observed_at);interval=abs((tb-ta).total_seconds())/86400
  return {'from':ObservationOut.model_validate(a),'to':ObservationOut.model_validate(b),'interval_days':round(interval,2),'deltas':{'longest_mm':round(b.longest_mm-a.longest_mm,2),'width_mm':round(b.width_mm-a.width_mm,2),'depth_mm':round(b.depth_mm-a.depth_mm,2) if a.depth_mm is not None and b.depth_mm is not None else None,'volume_mm3':round(b.volume_mm3-a.volume_mm3,2) if a.volume_mm3 is not None and b.volume_mm3 is not None else None}}
